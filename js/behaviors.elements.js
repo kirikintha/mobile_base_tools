@@ -5,36 +5,41 @@
 //If javascript is enabled
 if (Drupal.jsEnabled) {
   //Variables
-  var rows, row, target, output, copy, next;
+  var data, rows, row, target, output, copy, next;
+  var items = {};
   //Set module namespace.
-  Drupal.mobileThemeTools       = Drupal.mobileThemeTools || {};
-  Drupal.mobileThemeTools.theme = Drupal.mobileThemeTools.theme || {};
+  Drupal.mobileBaseTools       = Drupal.mobileBaseTools || {};
+  Drupal.mobileBaseTools.theme = Drupal.mobileBaseTools.theme || {};
   //Bind page events.
-  Drupal.behaviors.mobileThemeToolsInit = function(context) {
+  Drupal.behaviors.mobileBaseToolsInit = function(context) {
     //Delete form field for meta tags.
     if($('button.delete-me').length){
       $('button.delete-me', context).each(function() {
-        $(this).bind('click', Drupal.mobileThemeTools.del);
+        $(this).bind('click', Drupal.mobileBaseTools._del);
       });
     }
     //Add Form Field
     if($('button.add-me').length){
       $('button.add-me', context).each(function() {
-        $(this).bind('click', Drupal.mobileThemeTools.add);
+        $(this).bind('click', Drupal.mobileBaseTools._add);
       });
     }
     //Toggle all module checkboxes on or off.
     if($('input.settings-toggle').length) {
       $('input.settings-toggle', context).each(function() {
-        $(this).bind('click', Drupal.mobileThemeTools.toggle);
+        $(this).bind('click', Drupal.mobileBaseTools._toggle);
       });
     }
   }
   //Delete a row.
-  Drupal.mobileThemeTools.del = function() {
-    //Find out how many rows they have, and make sure that we have at least the defaults. This cannot be less than 4 rows.
-    rows   = $(this).closest('.fieldset-content').children('.form-item');
-    target = $(this).closest('.fieldset-content');
+  Drupal.mobileBaseTools._del = function() {
+    //Get the Rows already built.
+    items  = Drupal.mobileBaseTools._find($(this));
+    //Get the Rows already built.
+    rows   = items.rows;
+    //Find our target.
+    target = items.target;
+    //Find our target.
     if (rows.length > 1) {
       $(this).parents('.form-item').fadeOut(function() {
         $(this).remove();
@@ -45,15 +50,17 @@ if (Drupal.jsEnabled) {
     }
   }
   //Add a row.
-  Drupal.mobileThemeTools.add = function() {
+  Drupal.mobileBaseTools._add = function() {
     //Get the Rows already built.
-    rows   = $(this).closest('.fieldset-content').children('.form-item');
+    items  = Drupal.mobileBaseTools._find($(this));
+    //Get the Rows already built.
+    rows   = items.rows;
     //Get the row we are cloning.
     row    = rows[0];
     //Find our target.
-    target = $(this).closest('.fieldset-content');
+    target = items.target;
     //Reset this target's messages.
-    $(this).closest('.fieldset-content').find('.message').each(function() {$(this).remove();});
+    $(this).closest('div[class^=fieldset-]').find('.message').each(function() {$(this).remove();});
     //Generate the next number for a row.
     next = rows[rows.length-1].id;
     next = next.replace(/[a-zA-z\-]/ig, '');
@@ -78,10 +85,10 @@ if (Drupal.jsEnabled) {
     Drupal.theme('message', target, 'New Row Added.', 'status');
   }
   //Toggle this element and it's children.
-  Drupal.mobileThemeTools.toggle = function () {
-    //Check to see fi we are selected or not, if we are, select all. If not deselect all but what was selected.
-    var checked = $(this).closest('.fieldset-content').find('.form-checkbox:checked');
-    var rows    = $(this).closest('.fieldset-content').find('.form-checkbox');
+  Drupal.mobileBaseTools._toggle = function () {
+    //Check to see if we are selected or not, if we are, select all. If not deselect all but what was selected.
+    var checked = $(this).closest('div[class^=fieldset-]').find('.form-checkbox:checked');
+    var rows    = $(this).closest('div[class^=fieldset-]').find('.form-checkbox');
     if ($(this).is(':checked')) {
       rows.each(function() {
         $(this).attr('checked', true);
@@ -92,6 +99,17 @@ if (Drupal.jsEnabled) {
       });
     }
   }
+  //Find a particular set of rows if they exist.
+  Drupal.mobileBaseTools._find = function (manager) {
+    //Clear out items objec,t so there is no cross contamination.
+    items = {};
+    //Get the rows we need from this item.
+    items.rows   = manager.closest('div[class^=fieldset-]').children('.form-item');
+    //Get the target for this operation.
+    items.target = manager.closest('div[class^=fieldset-]');
+    //Return our items.
+    return items;
+  }
 
   /**
    * Theme implenentations.
@@ -101,7 +119,7 @@ if (Drupal.jsEnabled) {
     //Remove any messages set.
     target.find('.message').each(function() {$(this).remove();});
     //Set our new Message.
-    target.append(Drupal.mobileThemeTools.theme.setMessage(Drupal.t(text), status));
+    target.append(Drupal.mobileBaseTools.theme.setMessage(Drupal.t(text), status));
     //Set our messages to fade out eventually.
     setTimeout(function() {
       //Set the timeout for our classes.
@@ -109,7 +127,7 @@ if (Drupal.jsEnabled) {
     },'1500');
   }
   //Set a Drupal Message.
-  Drupal.mobileThemeTools.theme.setMessage = function(text, status) {
+  Drupal.mobileBaseTools.theme.setMessage = function(text, status) {
     output = '';
     output += '<div class="message '+status+'"><p><h4>';
     output += text;
