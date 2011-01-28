@@ -1,0 +1,210 @@
+<?php
+/**
+ * @name Mobile Theme Tools
+ * Provides a set of helper functions and theme-setting elements for the "mobile" theme.
+ * @file mobile_theme_settings.module
+ * @copyright 2011 Blue Tent Marketing
+ * @author Paul T. Huntsberger <paul@bluetent.com>
+ */
+
+/**
+ * Define Module Constants
+ */
+define("MOBILE_THEME_SETTINGS_MODULE_PATH", drupal_get_path( 'module', 'mobile_base_tools' ));
+
+/**
+ * Include the module class.
+ */
+require_once(MOBILE_THEME_SETTINGS_MODULE_PATH .'/includes/class.mobileBaseTools.inc');
+
+/**
+ * Implementation of hook_init().
+ */
+function mobile_base_tools_init() {
+  //Load the relevent js files when we hit the page.
+  mobileBaseTools::_loadJSSettings();
+}
+
+function mobile_base_tools_elements() {
+  $elements = array();
+  //Meta Tags Element.
+  $elements['meta_tags'] = array(
+    '#input'   => TRUE,
+    '#process' => array('mobile_base_tools_process_meta_tags'),
+  );
+  $elements['link_tags'] = array(
+    '#input'   => TRUE,
+    '#process' => array('mobile_base_tools_process_link_tags'),
+  );
+  return $elements;
+}
+
+/**
+ * @name mobile_base_tools_process_meta_tags($element);
+ * Processes our Meta Tags element.
+ * @todo is there a way I can fold both these preprocessors together?
+ */
+function mobile_base_tools_process_meta_tags($element) {
+  //Create Admin Buttons. @todo - make this part of the theme?
+  $buttons = array(
+    '!add_button'    => '<button type="button" class="add-me" title="Add" alt="Add another row.">Add</button>',
+    '!delete_button' => '<button type="button" class="delete-me" title="Delete" alt="Delete this row.">Delete</button>',
+  );
+  //Add admin.css
+  drupal_add_css(MOBILE_THEME_SETTINGS_MODULE_PATH .'/css/admin.elements.css');
+  //Add JS for this element.
+  drupal_add_js(MOBILE_THEME_SETTINGS_MODULE_PATH .'/js/behaviors.elements.js');
+  //Process Element.
+  $element['#tree'] = TRUE;
+  $parents = $elements['#parents'];
+  //Meta Name.
+  $parents[] = 'meta_name';
+  $element['meta_name'] = array(
+    '#type'          => 'textfield',
+    '#default_value' => $element['#value']['meta_name'],
+    '#size'          => '20',
+    '#maxlength'     => '30',
+    '#attributes'    => array('class' => 'meta-name'),
+    '#prefix'        => check_plain('<meta name="'),
+    '#suffix'        => check_plain('"'),
+  );
+  //Meta Content.
+  $parents = $element['#parents'];
+  $parents[] = 'meta_content';
+  $element['meta_content'] = array(
+    '#type'          => 'textfield',
+    '#default_value' => $element['#value']['meta_content'],
+    '#size'          => '60',
+    '#maxlength'     => '300',
+    '#attributes'    => array('class' => 'meta-content'),
+    '#prefix'        => check_plain(' content="'),
+    '#suffix'        => check_plain('" />').t('!delete_button',$buttons),
+  );
+  //Return Element.
+  return $element;
+}
+
+function mobile_base_tools_process_link_tags($element) {
+  //Create Admin Buttons.
+  $buttons = array(
+    '!add_button'    => '<button type="button" class="add-me" title="Add" alt="Add another row.">Add</button>',
+    '!delete_button' => '<button type="button" class="delete-me" title="Delete" alt="Delete this row.">Delete</button>',
+  );
+  //Add admin.css
+  drupal_add_css(MOBILE_THEME_SETTINGS_MODULE_PATH .'/css/admin.elements.css');
+  //Add JS for this element.
+  drupal_add_js(MOBILE_THEME_SETTINGS_MODULE_PATH .'/js/behaviors.elements.js');
+  //Process Element.
+  $element['#tree'] = TRUE;
+  $parents = $elements['#parents'];
+  //Meta Name.
+  $parents[] = 'link_rel';
+  $element['link_rel'] = array(
+    '#type'          => 'textfield',
+    '#default_value' => $element['#value']['link_rel'],
+    '#size'          => '20',
+    '#maxlength'     => '30',
+    '#attributes'    => array('class' => 'link-rel'),
+    '#prefix'        => check_plain('<link rel="'),
+    '#suffix'        => check_plain('"'),
+  );
+  //Meta Content.
+  $parents = $element['#parents'];
+  $parents[] = 'link_href';
+  $element['link_href'] = array(
+    '#type'          => 'textfield',
+    '#default_value' => $element['#value']['link_href'],
+    '#size'          => '60',
+    '#maxlength'     => '300',
+    '#attributes'    => array('class' => 'link-href'),
+    '#prefix'        => check_plain(' href="'),
+    '#suffix'        => check_plain('" />').t('!delete_button',$buttons),
+  );
+  //Return Element.
+  return $element;
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function mobile_base_tools_theme() {
+  return array(
+    'meta_tags' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'link_tags' => array(
+      'arguments' => array('element' => NULL),
+    ),
+  );
+}
+
+/**
+ * Theme Meta Tags.
+ */
+function theme_meta_tags($element) {
+  return theme('form_element', $element, '<div class="container-inline mobile-meta-tags">' . $element['#children'] . '</div>');
+}
+
+/**
+ * Theme Link Tags.
+ */
+function theme_link_tags($element) {
+  return theme('form_element', $element, '<div class="container-inline mobile-link-tags">' . $element['#children'] . '</div>');
+}
+
+/**
+* Implementation of hook_imagecache_default_presets().
+ * This is to allow us to have a default set of mobile image presets, for all screen sizes.
+*/
+function mobile_base_tools_imagecache_default_presets() {
+  //Get our settings from the class
+  $manager = new mobileBaseTools();
+  //Set our default preset array,
+  $presets = array();
+  //Use this image preset array for our screen resolutions.
+  $resolutions = $manager->settings['resolutions']['imagecache'];
+  foreach ($resolutions as $resolution) {
+    //Get our dimensions and if we have a two dimensions, then make our preset.
+    $dimensions = explode("x",$resolution);
+    if (is_array($dimensions) && count($dimensions) > 0) {
+      //If both our dimensions are numeric
+      if (is_numeric($dimensions[0]) && is_numeric($dimensions[1])) {
+        //Make our presets by using the base and inverted image caches.
+        $name = 'mobile_image_'.$dimensions[0].'x'.$dimensions[1];
+        $presets[$name] = array (
+          'presetname' => $name,
+          'actions'    => array (
+            0 => array (
+              'weight' => '0',
+              'module' => 'imagecache',
+              'action' => 'imagecache_scale_and_crop',
+              'data' => array (
+                'width'  => $dimensions[0],
+                'height' => $dimensions[1],
+              ),
+            ),
+          ),
+        );
+      }
+    }
+  }
+  return $presets;
+}
+
+/**
+ * Implementation of hook_preprocess_page
+ */
+function mobile_base_tools_preprocess_page(&$vars) {
+  /**
+   * mobileBaseTools::_detectMobileDevice($vars)
+   * @return mixed
+   *  If Not A Mobile Device:
+      $vars['mobile']['is_mobile_device'] = FALSE;
+   *  If IS A Mobile Device:
+      $vars['mobile']['is_mobile_device'] = TRUE;
+   *  $vars['mobile']['device_capabilities'] = $wurfl_device->capabilities; @internal - see class.mobileBaseTools.inc for help.
+   *  If IS ON THE IGNORED LIST
+   *  $vars['mobile']['is_mobile_device'] = TRUE;
+   */
+  $vars = mobileBaseTools::_detectMobileDevice($vars);
+}

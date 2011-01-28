@@ -1,0 +1,5 @@
+name        = Mobile Base Tools
+description = Helper module, for use in the "mobil" theme. This allows the theme settings to be more complex, for a consistent back end UI.
+version     = 1.0-beta
+package     = Mobile Base Tools
+core        = 6.x

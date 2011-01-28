@@ -1,0 +1,51 @@
+/* Mobile Theme Tools Admin Elements
+    @file admin.elements.css
+-------------------------------------------------------------- */
+button {
+  float:right;
+  display:block;
+  width:16px;
+  height:25px;
+  text-indent:-9999px;
+  border:none;
+  cursor:pointer;
+}
+
+button.delete-me {
+  background: url(../images/list-remove.png) center center no-repeat;
+}
+
+div.btn-add-me {
+  clear: both;
+  display: block;
+  line-height: 25px;
+  text-align: left;
+  width: 99%;
+  margin-bottom:10px;
+}
+
+button.add-me {
+  float:left;
+  background: url(../images/list-add.png) center center no-repeat;
+  margin-right:10px;
+}
+
+/* Meta/Link Tags
+-------------------------------------------------------------- */
+div.container-inline.mobile-meta-tags {
+  height:25px;
+}
+
+div.container-inline.mobile-meta-tags input {
+  font-size: 0.94em;
+}
+
+div.container-inline.mobile-link-tags input.link-rel,
+div.container-inline.mobile-meta-tags input.meta-name {
+  max-width:135px;
+}
+
+div.container-inline.mobile-link-tags input.link-href,
+div.container-inline.mobile-meta-tags input.meta-content {
+  max-width:400px;
+}
