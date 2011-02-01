@@ -25,8 +25,8 @@ if (Drupal.jsEnabled) {
       });
     }
     //Toggle all module checkboxes on or off.
-    if($('input.settings-toggle').length) {
-      $('input.settings-toggle', context).each(function() {
+    if($('a.settings-toggle').length) {
+      $('a.settings-toggle', context).each(function() {
         $(this).bind('click', Drupal.mobileBaseTools._toggle);
       });
     }
@@ -89,15 +89,18 @@ if (Drupal.jsEnabled) {
     //Check to see if we are selected or not, if we are, select all. If not deselect all but what was selected.
     var checked = $(this).closest('div[class^=fieldset-]').find('.form-checkbox:checked');
     var rows    = $(this).closest('div[class^=fieldset-]').find('.form-checkbox');
-    if ($(this).is(':checked')) {
+    if ($(this).hasClass('all-on')) {
+      $(this).removeClass('all-on').text(Drupal.t('Toggle All Off'));
       rows.each(function() {
         $(this).attr('checked', true);
       });
     } else {
+      $(this).addClass('all-on').text(Drupal.t('Toggle All On'));
       rows.each(function() {
         $(this).attr('checked', false);
       });
     }
+    return false;
   }
   //Find a particular set of rows if they exist.
   Drupal.mobileBaseTools._find = function (manager) {

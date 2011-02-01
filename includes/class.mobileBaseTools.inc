@@ -22,7 +22,7 @@ class mobileBaseTools {
     //Module settings.
     $this->settings = variable_get('mobile_base_tools_settings', array());
     //Theme path settings.
-    $this->modulePath  = MOBILE_THEME_SETTINGS_MODULE_PATH;
+    $this->modulePath  = MOBILE_BASE_TOOLS_MODULE_PATH;
     //User Agenents to ignore.
     $this->ignoreAgents = array(
       'ipad',
@@ -348,5 +348,279 @@ class mobileBaseTools {
     }
     //Return our variables.
     return $vars;
+  }
+}
+
+
+/**
+ * mobileBaseToolsAdmin
+ * This houses the theme-settings.php $form
+ */
+class mobileBaseToolsAdmin extends mobileBaseTools {
+
+  /**
+   * @name _getAdminForm($form = array());
+   * @param <type> $form
+   * @return <type>
+   */
+  public static function _getAdminForm($saved_settings, $theme_name, $info_theme_settings) {
+    //UI Buttons.
+    $buttons = array(
+      '!add_button'    => '<div class="btn-add-me"><button type="button" class="add-me" title="Add" alt="Add A New Row.">Add</button><p>Add A New Row</p></div>',
+      '!delete_button' => '<button type="button" class="delete-me" title="Delete" alt="Delete this Row.">Delete</button>',
+    );
+    //Form settings for mobile parameters.
+    $form['mobile_settings'] = array(
+      '#type'        => 'fieldset',
+      '#title'       => t('Mobile Settings & Optimizations', array('@name' => $theme_name)),
+      '#description' => t('Use this theme to set your mobile parameters.'),
+      '#collapsible' => TRUE,
+      '#collapsed'   => FALSE,
+    );
+    //Meta Tags.
+    $form['mobile_settings']['meta_tags'] = array(
+      '#type'        => 'fieldset',
+      '#title'       => t('Meta tags'),
+      '#description' => t('Add, modify or delete Meta tags for this theme.'),
+      '#collapsible' => TRUE,
+      '#collapsed'   => FALSE,
+    );
+    //Add Button.
+    $form['mobile_settings']['meta_tags']['add'] = array(
+      '#value' => t('!add_button',$buttons),
+    );
+    //Meta Tags can be added here. If there are no saved settings for this option, only one form field displays.
+    $meta_tags = array(
+      0 => array(
+        'meta_name'    => 'viewport',
+        'meta_content' => 'width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=1;',
+      ),
+      1 => array(
+        'meta_name'    => 'MobileOptimized',
+        'meta_content' => 'width',
+      ),
+      2 => array(
+        'meta_name'    => 'HandheldFriendly',
+        'meta_content' => 'true',
+      ),
+      3 => array(
+        'meta_name'    => 'format-detection',
+        'meta_content' => 'telephone=no',
+      ),
+    );
+    $saved_settings['intercept_meta_tags'] = (empty($saved_settings['intercept_meta_tags'])) ? $meta_tags : $saved_settings['intercept_meta_tags'];
+    foreach ($saved_settings['intercept_meta_tags'] as $key => $value) {
+      if (!empty($value['meta_name']) && !empty($value['meta_content'])) {
+        //If we have both a name and content, apply the meta tag
+        $form['mobile_settings']['meta_tags']['element_meta_tags_' .$key] = array(
+          '#type'          => 'meta_tags',
+          '#default_value' => array(
+            'meta_name'    => $value['meta_name'],
+            'meta_content' => $value['meta_content'],
+          ),
+          '#element_validate' => array('_mobile_settings_submit'),
+        );
+      }
+    }
+    //Additional Stylesheet implementations espeically, for apple mobile <link rel="apple-touch-icon" href="apple-touch-icon.png" />.
+    $form['mobile_settings']['mobile_styles'] = array(
+      '#type'        => 'fieldset',
+      '#title'       => t('Mobile Styles'),
+      '#description' => t(''),
+      '#collapsible' => TRUE,
+      '#collapsed'   => FALSE,
+    );
+    //Add Button.
+    $form['mobile_settings']['mobile_styles']['add'] = array(
+      '#value' => t('!add_button',$buttons),
+    );
+    //Meta Tags can be added here. If there are no saved settings for this option, only one form field displays.
+    $link_tags = array(
+      0 => array(
+        'link_rel'  => 'apple-touch-icon',
+        'link_href' => '/' .$theme_path .'/apple-touch-icon.png',
+      ),
+    );
+    $saved_settings['intercept_link_tags'] = (empty($saved_settings['intercept_link_tags'])) ? $link_tags : $saved_settings['intercept_link_tags'];
+    foreach ($saved_settings['intercept_link_tags'] as $key => $value) {
+      if (!empty($value['link_rel']) && !empty($value['link_href'])) {
+        //If we have both a name and content, apply the link tag.
+        $form['mobile_settings']['mobile_styles']['element_link_tags_' .$key] = array(
+          '#type'          => 'link_tags',
+          '#default_value' => array(
+            'link_rel'  => $value['link_rel'],
+            'link_href' => $value['link_href'],
+          ),
+          '#element_validate' => array('_mobile_settings_submit'),
+        );
+      }
+    }
+    //Javascript.
+    $form['mobile_settings']['mobile_js'] = array(
+      '#type'        => 'fieldset',
+      '#title'       => t('Mobile Javascript Settings'),
+      '#description' => t(''),
+      '#collapsible' => TRUE,
+      '#collapsed'   => FALSE,
+    );
+    //Javascript settings. You can turn on or turn off javascript interception, and also set what javascript you want to ignore.
+    $form['mobile_settings']['mobile_js']['intercept_js'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Aggregate Javascript into $vars[\'mobile_scripts\'] and remove unwanted scripts from the mobile theme. All javascript is enabled by default. Un-Check a specific checkbox to omit that file form being loaded.'),
+      '#default_value' => $saved_settings['intercept_js'],
+      '#description'   => t('By checking this box, you will intercept the $vars[\'scripts\'] variable, remove unwanted javascript, aggregate it and return the variable $vars[\'mobile_scripts\']. This has the effect of making one js request in the header, but also optimizes the javascript to be leaner for mobile browsers. NOTE: this onnly works for javascript set in the header.'),
+      '#prefix'        => '<h2>Javascript Aggregation</h2>',
+    );
+    /**
+     * Javascript file exclusion
+     * This denies any javascript we do not want to load to the page via theme UI.
+     * @todo - I know this code can get compacted, I just wanted ot make sure I could suss out how it works.
+     */
+    //Core js files.
+    $core_files   = file_scan_directory('modules', '.js', array('.', '..', 'CVS', 'drupal.js', 'jquery.js'));
+    //kpr($core_files);
+    $form['mobile_settings']['mobile_js']['core'] = array(
+      '#type'        => 'fieldset',
+      '#title'       => t('Core Javascript Files. @count files', array('@count' => count($core_files))),
+      '#description' => t(''),
+      '#collapsible' => TRUE,
+      '#collapsed'   => TRUE,
+    );
+    //Reset the files array.
+    $files = array();
+    foreach ($core_files as $key => $file) {
+      $files[$file->filename] = t('@name - @file', array('@name' => $file->name, '@file' => $file->filename));
+    }
+    $form['mobile_settings']['mobile_js']['core']['element_js_excludes_core'] = array(
+      '#type'          => 'checkboxes',
+      '#options'       => $files,
+      '#default_value' => !empty($saved_settings['element_js_excludes_core']) ? $saved_settings['element_js_excludes_core'] : array_keys($files),
+    );
+    //Misc Drupal Files.
+    $misc_files   = file_scan_directory('misc', '.js');
+    $form['mobile_settings']['mobile_js']['misc'] = array(
+      '#type'        => 'fieldset',
+      '#title'       => t('Misc Javascript Files. @count files', array('@count' => count($misc_files))),
+      '#description' => t(''),
+      '#collapsible' => TRUE,
+      '#collapsed'   => TRUE,
+    );
+    //Reset the files array.
+    $files = array();
+    foreach ($misc_files as $key => $file) {
+      $files[$file->filename] = t('@name - @file', array('@name' => $file->name, '@file' => $file->filename));
+    }
+    $form['mobile_settings']['mobile_js']['misc']['element_js_excludes_misc'] = array(
+      '#type'          => 'checkboxes',
+      '#options'       => $files,
+      '#default_value' => !empty($saved_settings['element_js_excludes_misc']) ? $saved_settings['element_js_excludes_misc'] : array_keys($files),
+    );
+    //Sacn Library js files if the directory exists.
+    $dir = 'sites/all/libraries';
+    $success = file_check_directory($dir, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
+    if ($success) {
+      $libraries_files   = file_scan_directory('sites/all/libraries', '.js');
+      //kpr($libraries_files);
+      $form['mobile_settings']['mobile_js']['libraries'] = array(
+        '#type'        => 'fieldset',
+        '#title'       => t('Library Files. @count files', array('@count' => count($libraries_files))),
+        '#description' => t(''),
+        '#collapsible' => TRUE,
+        '#collapsed'   => TRUE,
+      );
+      //Reset the files array.
+      $files = array();
+      foreach ($libraries_files as $key => $file) {
+        $files[$file->filename] = t('@name - @file', array('@name' => $file->name, '@file' => $file->filename));
+      }
+      $form['mobile_settings']['mobile_js']['libraries']['element_js_excludes_libraries'] = array(
+        '#type'          => 'checkboxes',
+        '#options'       => $files,
+        '#default_value' => !empty($saved_settings['element_js_excludes_libraries']) ? $saved_settings['element_js_excludes_libraries'] : array_keys($files),
+      );
+    }
+    //Module js files.
+    $form['mobile_settings']['mobile_js']['modules'] = array(
+      '#type'        => 'fieldset',
+      '#title'       => t('Module Javascript Files.'),
+      '#description' => t(''),
+      '#collapsible' => TRUE,
+      '#collapsed'   => TRUE,
+    );
+    // Get current list of modules from the current cache.
+    $modules = module_rebuild_cache();
+    uasort($modules, 'system_sort_modules_by_info_name');
+    //Toggle UI. This does not necessarily need to be here, but is kinda hard to place inthe code.
+    $toggle_options['attributes'] = array('class' => 'settings-toggle all-on');
+    $toggle_link = l(t('Toggle All On'), $_GET['q'], $toggle_options);
+    //Loop Through Modules.
+    foreach ($modules as $name => $module) {
+      //If a module is active, scan the directory for each javscript file and make that into a disable list.
+      if ($module->status == 1 && $module->type == 'module') {
+        //Scan for js files.
+        $path = drupal_get_path('module', $module->name);
+        $module_files = file_scan_directory($path, '.js');
+        if (count($module_files) > 0) {
+          //Make a module fieldset
+          $form['mobile_settings']['mobile_js']['modules'][$name] = array(
+            '#type'        => 'fieldset',
+            '#title'       => t('@name @count files', array('@name' => $module->info['name'], '@count' => count($module_files))),
+            '#description' => t('@description', array('@description' => $module->info['description'])),
+            '#collapsible' => TRUE,
+            '#collapsed'   => TRUE,
+          );
+          //Toggle All.
+          $form['mobile_settings']['mobile_js']['modules'][$name][$name .'_toggle'] = array(
+            '#type'       => 'markup',
+            '#value'      => $toggle_link,
+            '#weight'     => -100,
+          );
+          //Reset the files array.
+          $files = array();
+          //Populate module files.
+          foreach ($module_files as $key => $file) {
+            $files[$file->filename] = t('@name - @file', array('@name' => $file->name, '@file' => $file->filename));
+          }
+          $form['mobile_settings']['mobile_js']['modules'][$name]['element_js_excludes_modules_'.$name] = array(
+            '#type'          => 'checkboxes',
+            '#options'       => $files,
+            '#default_value' => !empty($saved_settings['element_js_excludes_modules_'.$name]) ? $saved_settings['element_js_excludes_modules_'.$name] : array_keys($files),
+          );
+          //Unset our files.
+          unset($files);
+        }
+        //Unset our module files
+        unset($module_files);
+      }
+    }
+    //Toggle Link for all remaining directories.
+    $form['mobile_settings']['mobile_js']['libraries']['libraries_toggle'] =
+    $form['mobile_settings']['mobile_js']['misc']['misc_toggle'] =
+    $form['mobile_settings']['mobile_js']['core']['core_toggle'] = array(
+      '#type'       => 'markup',
+      '#value'      => $toggle_link,
+      '#weight'     => -100,
+    );
+    //Disable, enable the admin_menu if is there. This will remove the admin menu from the $closure variable.
+    if (module_exists('admin_menu')) {
+      $form['mobile_settings']['mobile_admin'] = array(
+        '#type'        => 'fieldset',
+        '#title'       => t('Mobile Javascript Settings'),
+        '#description' => t(''),
+        '#collapsible' => TRUE,
+        '#collapsed'   => FALSE,
+      );
+      $form['mobile_settings']['mobile_admin']['intercept_admin_menu'] = array(
+        '#type'          => 'checkbox',
+        '#title'         => t('Disable the admin menu from displaying in this theme.'),
+        '#default_value' => $saved_settings['intercept_admin_menu'],
+        '#description'   => t('By checking this box, you will intercept the $vars[\'closure\'] variable, remove the admin menu and return a variable called $vars[\'mobile_closure\']'),
+        '#prefix'        => '<h2>Admin Menu</h2>',
+      );
+    }
+    //Add in our own submit handler.
+    $form['#submit'][] = '_mobile_settings_submit';
+    //Return our form.
+    return $form;
   }
 }

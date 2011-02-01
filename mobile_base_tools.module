@@ -10,12 +10,12 @@
 /**
  * Define Module Constants
  */
-define("MOBILE_THEME_SETTINGS_MODULE_PATH", drupal_get_path( 'module', 'mobile_base_tools' ));
+define("MOBILE_BASE_TOOLS_MODULE_PATH", drupal_get_path( 'module', 'mobile_base_tools' ));
 
 /**
  * Include the module class.
  */
-require_once(MOBILE_THEME_SETTINGS_MODULE_PATH .'/includes/class.mobileBaseTools.inc');
+require_once(MOBILE_BASE_TOOLS_MODULE_PATH .'/includes/class.mobileBaseTools.inc');
 
 /**
  * Implementation of hook_init().
@@ -51,9 +51,9 @@ function mobile_base_tools_process_meta_tags($element) {
     '!delete_button' => '<button type="button" class="delete-me" title="Delete" alt="Delete this row.">Delete</button>',
   );
   //Add admin.css
-  drupal_add_css(MOBILE_THEME_SETTINGS_MODULE_PATH .'/css/admin.elements.css');
+  drupal_add_css(MOBILE_BASE_TOOLS_MODULE_PATH .'/css/admin.elements.css');
   //Add JS for this element.
-  drupal_add_js(MOBILE_THEME_SETTINGS_MODULE_PATH .'/js/behaviors.elements.js');
+  drupal_add_js(MOBILE_BASE_TOOLS_MODULE_PATH .'/js/behaviors.elements.js');
   //Process Element.
   $element['#tree'] = TRUE;
   $parents = $elements['#parents'];
@@ -91,9 +91,9 @@ function mobile_base_tools_process_link_tags($element) {
     '!delete_button' => '<button type="button" class="delete-me" title="Delete" alt="Delete this row.">Delete</button>',
   );
   //Add admin.css
-  drupal_add_css(MOBILE_THEME_SETTINGS_MODULE_PATH .'/css/admin.elements.css');
+  drupal_add_css(MOBILE_BASE_TOOLS_MODULE_PATH .'/css/admin.elements.css');
   //Add JS for this element.
-  drupal_add_js(MOBILE_THEME_SETTINGS_MODULE_PATH .'/js/behaviors.elements.js');
+  drupal_add_js(MOBILE_BASE_TOOLS_MODULE_PATH .'/js/behaviors.elements.js');
   //Process Element.
   $element['#tree'] = TRUE;
   $parents = $elements['#parents'];
@@ -207,4 +207,42 @@ function mobile_base_tools_preprocess_page(&$vars) {
    *  $vars['mobile']['is_mobile_device'] = TRUE;
    */
   $vars = mobileBaseTools::_detectMobileDevice($vars);
+}
+
+/**
+ * @name _mobil_settings_submit($form, &$form_state)
+ * Submit handler for mobileBaseToolsAdmin::_getForm().
+ */
+function _mobile_settings_submit($form, &$form_state) {
+  //Get the meta/link tags into a form that the FAPI can undestand.
+  $form_state['values']['intercept_meta_tags'] = (is_array($form_state['values']['intercept_meta_tags'])) ? $form_state['values']['intercept_meta_tags'] : array();
+  $form_state['values']['intercept_link_tags'] = (is_array($form_state['values']['intercept_link_tags'])) ? $form_state['values']['intercept_link_tags'] : array();
+  $form_state['values']['intercept_js_excludes'] = array();
+  //Loop through our form_state values and change any values.
+  foreach ($form_state['values'] as $key => $value) {
+    //If we match a meta tag, then add it to the intercept array and unset the values, so the $theme_settings remain in tact.
+    if (strstr($key, 'element_meta_tags')) {
+      if (!empty($value['meta_name']) && !empty($value['meta_content'])) {
+        $form_state['values']['intercept_meta_tags'][] = $value;
+      }
+      unset($form_state['values'][$key]);
+    }
+    //If we match a link tag, then add it to the intercept array and unset the values, so the $theme_settings remain in tact.
+    if (strstr($key, 'element_link_tags')) {
+      if (!empty($value['link_rel']) && !empty($value['link_href'])) {
+        $form_state['values']['intercept_link_tags'][] = $value;
+      }
+      unset($form_state['values'][$key]);
+    }
+    //If we match a js exclusion array, then add it to the intercept_js_excludes array, so we can easily read that array in the interceptJS method. Do not unset variables here.
+    if (strstr($key, 'element_js_excludes')) {
+      //We have to go through each value and see if it has been disabled, if it has a 0 (FALSE) then we add it to the list.
+      foreach ($value as $item => $piece) {
+        //If we have an empty item, add it to our exclusion array.
+        if (empty($piece)) {
+          $form_state['values']['intercept_js_excludes'][] = $item;
+        }
+      }
+    }
+  }
 }
