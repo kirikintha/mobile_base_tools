@@ -172,6 +172,28 @@ class mobileBaseTools {
     if ($theme_settings['intercept_js'] == 1) {
       //Restrict javascript to the essentials only!
       $scripts = drupal_add_js(NULL, NULL, NULL);
+      //Since jquery update is a little wonky on when it replaces jquery, then we need to do the replacements here, since for some reason the page_process can fail.
+      //Since this is taken straight from the jquery update module, if there are changes or whatever - this has to be updated too.
+      if (variable_get('jquery_update_replace', TRUE)) {
+        // Replace jquery.js first.
+        $new_jquery = array(jquery_update_jquery_path() => $scripts['header']['core']['misc/jquery.js']);
+        $scripts['header']['core'] = array_merge($new_jquery, $scripts['header']['core']);
+        unset($scripts['header']['core']['misc/jquery.js']);
+
+         // Loop through each of the required replacements.
+        foreach (jquery_update_get_replacements() as $type => $replacements) {
+          foreach ($replacements as $find => $replace) {
+            // If the file to replace is loaded on this page...
+            if (isset($scripts[$type][$find])) {
+              // Create a new entry for the replacement file, and unset the original one.
+              $replace = JQUERY_UPDATE_REPLACE_PATH .'/'. $replace;
+              $scripts[$type][$replace] = $scripts[$type][$find];
+              unset($scripts[$type][$find]);
+            }
+          }
+        }
+      }
+      //Look through our scripts to see if they are allowed.
       if (!empty($scripts['header'])) {
         //The scripts array has core, module, theme, settings etc as keys.
         $types = array('module');
