@@ -88,10 +88,15 @@ class mobileBaseTools {
         global $wurfl_device;
         //Device Capabilities.
         $vars['mobile']['device_capabilities'] = $wurfl_device->capabilities;
-        //Findthe resolution.
+        //Find the resolution.
         $vars['mobile']['device_resolution']   = self::_getDeviceResolution($vars, $manager);
+        $resolutions = explode('x', $vars['mobile']['device_resolution']);
+        //minWidth
+        $vars['mobile']['minWidth'] = $resolutions[0];
+        //minHeight
+        $vars['mobile']['maxHeight'] = $resolutions[1];
         //Tablet information.
-        $vars['mobile']['is_tablet']           = $wurfl_device->capabilities['product_info']['is_tablet'];
+        $vars['mobile']['is_tablet'] = $wurfl_device->capabilities['product_info']['is_tablet'];
       }
     }
     //Unset the manager object.
@@ -101,7 +106,7 @@ class mobileBaseTools {
   }
 
   public static function _loadJSSettings() {
-    //Get our mobile variables, so we can also assign them to Drupal.settings
+    //Get our mobile variables, so we can also assign them to Drupal.settings - Add settings via detectMobileDevice in $vars['mobile']%foo
     $vars = self::_detectMobileDevice();
     //Render our Drupal.settings.
     drupal_add_js($vars, 'setting');
@@ -158,7 +163,7 @@ class mobileBaseTools {
     }
     //Set our body-class for our max-width of the page.
     if ($vars['mobile']['device_resolution']) {
-      $vars['body_classes'] .= ' resolution-'.$vars['mobile']['device_resolution'];
+      $vars['body_classes'] .= ' resolution-'.$vars['mobile']['device_capabilities']['display']['max_image_width'] .'x' .$vars['mobile']['device_capabilities']['display']['max_image_height'];
     }
     return $vars;
   }
@@ -355,11 +360,11 @@ class mobileBaseTools {
               );
               $replace     = array(
                 //%resolution x %resolution.
-                $resolutions[0] .'x',
-                'x' .$resolutions[1],
+                $resolutions[1] .'x',
+                'x' .$resolutions[0],
                 //Width & Height.
-                'width="' .$resolutions[0],
-                'height="' .$resolutions[1],
+                'width="' .$resolutions[1],
+                'height="' .$resolutions[0],
               );
               //Replace our images.
               $vars[$region] = str_replace($search, $replace, $vars[$region]);

@@ -30,29 +30,21 @@ function mobile_base_tools_enable() {
   $settings['resolutions']['thresholds']['ranges'] = array(160,220,320,480,600,768);
   //When we get the number by intersecting a range of resolutios, we need to get our resolution by looking up the key from above.
   $settings['resolutions']['thresholds']['lookup'] = array(
-    160 => '160x128',
-    220 => '220x176',
-    320 => '320x480',
-    480 => '480x854',
-    600 => '600x800',
-    768 => '768x1024',
+    160 => '160x160',
+    220 => '220x220',
+    320 => '480x480',
+    480 => '600x600',
+    600 => '800x800',
+    768 => '1024x1024',
   );
   //Master resolutions, not to be confused with the above thresholds this is just a list of supported resolutions for imagecache.
   $settings['resolutions']['imagecache'] = array(
-    '1024x768',
-    '768x1024',
-    '600x800',
-    '800x600',
-    '480x854',
-    '854x480',
-    '480x320',
-    '320x480',
-    '240x320',
-    '320x240',
-    '176x220',
-    '220x176',
-    '128x160',
-    '160x128',
+    '160x160',
+    '220x220',
+    '480x480',
+    '600x600',
+    '800x800',
+    '1024x1024',
   );
   variable_set('mobile_base_tools_settings', $settings);
   //Set a message when we enable the module
