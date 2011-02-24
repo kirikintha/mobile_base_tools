@@ -316,11 +316,13 @@ class mobileBaseTools {
     $ranges = $manager->settings['resolutions']['thresholds']['ranges'];
     //Set a range for resolution width and max_iamge width, so we can find the right number.
     $range  = range($vars['mobile']['device_capabilities']['display']['max_image_width'],$vars['mobile']['device_capabilities']['display']['resolution_width']);
-    //In our range, find the array value that comes closes to the dimensions we define.
-    $number = max(array_intersect($range,$ranges));
+    //In our range, find the array value that comes closes to the dimensions we define, or default to the LCD.
+    $intersection = array_intersect($range,$ranges);
+    $number = (!empty($intersection)) ? max($intersection) : 320;
     //Get the resolution form the array.
     $resolutions = $manager->settings['resolutions']['thresholds']['lookup'];
-    return (empty($number)) ? $resolutions[320] : $resolutions[$number];
+    //Return our reolution.
+    return $resolutions[$number];
   }
 
   /**
